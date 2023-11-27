@@ -10,6 +10,6 @@ go run cmd/main.go \
   -output yellow_tripdata_2018-05.parquet
 ```
 
-## Requirements
+## References
 
 <https://www.353solutions.com/c/znga/dld.html>

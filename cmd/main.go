@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"sync"
@@ -28,13 +29,13 @@ func main() {
 	// Issue a HEAD request to get file size and MD5 signature
 	resp, err := http.Head(*url)
 	if err != nil {
-		fmt.Println("Error:", err)
+		slog.Error("Error:", err)
 		os.Exit(1)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		fmt.Println("Error:", resp.Status)
+		slog.Error("Response status error", "Message:", resp.Status)
 		os.Exit(1)
 	}
 
@@ -44,7 +45,7 @@ func main() {
 	// Create an empty file with the required size
 	err = pd.CreateEmptyFile(*destFile, fileSize)
 	if err != nil {
-		fmt.Println("Error creating empty file:", err)
+		slog.Error("Error creating empty file:", "Message:", err)
 		os.Exit(1)
 	}
 
@@ -71,12 +72,12 @@ func main() {
 	close(ch)
 	for err := range ch {
 		if err != nil {
-			fmt.Println("Error:", err)
+			slog.Error("Error downloading chunk:", "Message:", err)
 			// Cancel all goroutines on error and delete the file
 			_ = os.Remove(*destFile)
 			os.Exit(1)
 		}
 	}
 
-	fmt.Println("Download completed successfully. File MD5:", fileMD5)
+	slog.Info("Download completed successfully.", "File MD5", fileMD5)
 }

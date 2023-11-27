@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"sync"
@@ -78,7 +79,7 @@ func DownloadChunk(url string, destFile *os.File, offset, size int64, retries in
 func GetFileHandle(path string) *os.File {
 	file, err := os.OpenFile(path, os.O_WRONLY, os.ModePerm)
 	if err != nil {
-		fmt.Println("Error opening file:", err)
+		slog.Error("Error opening file:", "Message:", err)
 		os.Exit(1)
 	}
 	return file

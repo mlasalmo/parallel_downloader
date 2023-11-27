@@ -2,6 +2,7 @@ module github.com/mlasalmo/parallel_downloader
 
 go 1.21.4
 
+// Dev requirements
 require github.com/stretchr/testify v1.8.4
 
 require (

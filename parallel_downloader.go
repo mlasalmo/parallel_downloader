@@ -1,15 +1,17 @@
 package parallel_downloader
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"sync"
+	"time"
 )
 
-// createEmptyFile creates an empty file with the given size
-func createEmptyFile(path string, size int64) error {
+// CreateEmptyFile creates an empty file with the given size
+func CreateEmptyFile(path string, size int64) error {
 	file, err := os.Create(path)
 	if err != nil {
 		return err
@@ -20,11 +22,14 @@ func createEmptyFile(path string, size int64) error {
 	return nil
 }
 
-// downloadChunk downloads a portion of the file and writes it to the correct offset in the destination file
-func downloadChunk(url string, destFile *os.File, offset, size int64, wg *sync.WaitGroup, ch chan<- error) {
+// DownloadChunk downloads a portion of the file and writes it to the correct offset in the destination file
+func DownloadChunk(url string, destFile *os.File, offset, size int64, retries int, wg *sync.WaitGroup, ch chan<- error) {
 	defer wg.Done()
 
-	req, err := http.NewRequest("GET", url, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		ch <- err
 		return
@@ -36,7 +41,7 @@ func downloadChunk(url string, destFile *os.File, offset, size int64, wg *sync.W
 	var resp *http.Response
 	var retryCount int
 
-	for retryCount < 3 {
+	for retryCount < retries {
 		resp, err = http.DefaultClient.Do(req)
 		if err != nil {
 			retryCount++
@@ -69,8 +74,8 @@ func downloadChunk(url string, destFile *os.File, offset, size int64, wg *sync.W
 	}
 }
 
-// getFileHandle opens the file for writing and seeks to the specified offset
-func getFileHandle(path string) *os.File {
+// GetFileHandle opens the file for writing and seeks to the specified offset
+func GetFileHandle(path string) *os.File {
 	file, err := os.OpenFile(path, os.O_WRONLY, os.ModePerm)
 	if err != nil {
 		fmt.Println("Error opening file:", err)

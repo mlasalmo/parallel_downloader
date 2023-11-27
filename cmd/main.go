@@ -7,7 +7,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/mlasalmo/parallel_downloader"
+	pd "github.com/mlasalmo/parallel_downloader"
 )
 
 func main() {
@@ -15,12 +15,13 @@ func main() {
 	url := flag.String("url", "", "URL of the file to download")
 	destFile := flag.String("output", "", "Destination file path")
 	numGoroutines := flag.Int("goroutines", 4, "Number of downloading goroutines")
+	numRetries := flag.Int("retries", 3, "Number of retries for each chunk")
 	chunkSize := flag.Int64("chunksize", 1024*1024, "Chunk size for parallel downloading")
 	flag.Parse()
 
 	// Validate flags
 	if *url == "" || *destFile == "" {
-		fmt.Println("Usage: go run main.go -url <URL> -output <output_file> [-goroutines <num_goroutines>] [-chunksize <chunk_size>]")
+		fmt.Println("Usage: go run cmd/main.go -url <URL> -output <output_file> [-retries <num_retries>] [-goroutines <num_goroutines>] [-chunksize <chunk_size>]")
 		os.Exit(1)
 	}
 
@@ -41,7 +42,7 @@ func main() {
 	fileMD5 := resp.Header.Get("ETag")
 
 	// Create an empty file with the required size
-	err = createEmptyFile(*destFile, fileSize)
+	err = pd.CreateEmptyFile(*destFile, fileSize)
 	if err != nil {
 		fmt.Println("Error creating empty file:", err)
 		os.Exit(1)
@@ -60,7 +61,7 @@ func main() {
 		size := end - start + 1
 
 		wg.Add(1)
-		go downloadChunk(*url, getFileHandle(*destFile), start, size, &wg, ch)
+		go pd.DownloadChunk(*url, pd.GetFileHandle(*destFile), start, size, *numRetries, &wg, ch)
 	}
 
 	// Wait for all goroutines to finish
